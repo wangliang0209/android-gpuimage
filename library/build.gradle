@@ -1,5 +1,5 @@
 apply plugin: 'com.android.library'
-apply from: 'https://raw.github.com/chrisbanes/gradle-mvn-push/master/gradle-mvn-push.gradle'
+apply plugin: 'com.novoda.bintray-release'
 
 android {
     compileSdkVersion COMPILE_SDK_VERSION as int
@@ -9,8 +9,10 @@ android {
         minSdkVersion MIN_SDK_VERSION as int
         targetSdkVersion TARGET_SDK_VERSION as int
 
-        versionCode = VERSION_CODE
-        versionName = VERSION_NAME
+        versionCode "git rev-list origin/master --count".execute().text.toInteger()
+        versionName VERSION_NAME
+
+        consumerProguardFiles 'proguard-rules.txt'
 
         ndk {
             moduleName "gpuimage-library"
@@ -38,4 +40,33 @@ android {
     lintOptions {
         abortOnError false
     }
+}
+
+task androidJavadocs(type: Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+}
+
+task androidJavadocsJar(type: Jar, dependsOn: androidJavadocs) {
+    classifier = 'javadoc'
+    from androidJavadocs.destinationDir
+}
+
+task androidSourcesJar(type: Jar) {
+    classifier = 'sources'
+    from android.sourceSets.main.java.srcDirs
+}
+
+artifacts {
+    archives androidSourcesJar
+    archives androidJavadocsJar
+}
+
+publish {
+    userOrg = POM_DEVELOPER_ID
+    groupId = GROUP
+    artifactId = ARTIFACT_ID
+    publishVersion = VERSION_NAME
+    desc = POM_DESCRIPTION
+    website = POM_URL
 }
